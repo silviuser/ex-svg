@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<head>
+    <title>Constructor de Poligon</title>
+    <style>
+        #drawing-area{
+            border:2px solid black;
+            background-color: beige;
+            width: 100%;
+            height: 600px;
+            cursor: crosshair;
+        }
+        button{
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: goldenrod;
+            color: white;
+            border:none;
+            cursor: pointer;
+        }
+        .point{
+            fill:blue;
+            cursor:grab;
+        }
+        svg polygon{
+            fill:orange;
+            fill-opacity: 0.4;
+            stroke: orange;
+            stroke-width: 3
+        }
+    </style>
+</head>
+<body>
+    <h1>Deseneaza un poligon</h1>
+    <button onclick="resetDrawing()">Reseteaza Poligonul</button>
+    <svg id="drawing-area"> </svg>
+
+    <script>
+    const drawingArea = document.getElementById('drawing-area');
+    let pointsArray = [];
+    let polygonElement = null;
+    let draggingPoint = null; 
+    let draggingIndex = -1;
+    drawingArea.addEventListener('dblclick', (e) => {
+        const x = e.clientX - drawingArea.getBoundingClientRect().left;
+        const y = e.clientY - drawingArea.getBoundingClientRect().top;
+
+        pointsArray.push(`${x},${y}`);
+        updatePolygon();
+        drawPoint(x, y);
+    });
+    
+    function drawPoint(x, y) {
+        const point = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        point.setAttribute('cx', x);
+        point.setAttribute('cy', y);
+        point.setAttribute('r', '5');
+        point.setAttribute('class', 'point'); 
+
+        point.dataset.index = pointsArray.length - 1; 
+        point.addEventListener('mousedown', startDrag);
+        
+        drawingArea.appendChild(point);
+    }
+
+    function updatePolygon() {
+        const pointsString = pointsArray.join(' ');
+        if (!polygonElement) {
+            polygonElement = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            // drawingArea.insertBefore(polygonElement,drawingArea.firstChild)
+            drawingArea.appendChild(polygonElement);
+        }
+        polygonElement.setAttribute('points', pointsString);
+    }
+
+    function resetDrawing() {
+        pointsArray = [];
+        if (polygonElement) {
+            polygonElement.remove();
+            polygonElement = null;
+        }
+        const currentPoints = drawingArea.querySelectorAll('.point');
+        currentPoints.forEach(p => p.remove());
+        draggingPoint = null;
+        draggingIndex = -1;
+    }
+
+    function startDrag(e) {
+        draggingPoint = e.target;
+        draggingIndex = parseInt(draggingPoint.dataset.index);
+
+        draggingPoint.style.cursor = 'grabbing';
+        draggingPoint.style.fill = 'red';
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
+    }
+
+    function drag(e) {
+        if (!draggingPoint) return;
+        const svgRect = drawingArea.getBoundingClientRect()
+        let newX = e.clientX - svgRect.left;
+        let newY = e.clientY - svgRect.top;
+        if(newX<0)newX=0;
+        else if(newX>svgRect.width)newX=svgRect.width;
+        if(newY<0)newY=0;
+        else if(newY>svgRect.height)newY=svgRect.height;
+
+        draggingPoint.setAttribute('cx', newX);
+        draggingPoint.setAttribute('cy', newY);
+
+        pointsArray[draggingIndex] = `${newX},${newY}`;
+
+        updatePolygon(); 
+    }
+
+    function endDrag() {
+        if (!draggingPoint) return;
+        
+        draggingPoint.style.cursor = 'grab';
+        draggingPoint.style.fill = 'blue';
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', endDrag);
+        
+        draggingPoint = null;
+        draggingIndex = -1;
+    }
+    </script>
+</body>
+</html>
